@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios.js";
 import toast from "react-hot-toast";
-import { all } from "axios";
+
 
 
 export const useTransactionStore = create((set) => ({
@@ -48,7 +48,7 @@ export const useTransactionStore = create((set) => ({
     addBudget: async (data) => {
         try{
             await axiosInstance.post('/transaction/addBudget',data);
-            toast.success("Transaction added successfully");
+            toast.success("Budget added successfully");
         }
         catch (error){
             toast.error(error.response.data.message);
@@ -59,7 +59,7 @@ export const useTransactionStore = create((set) => ({
             const res = await axiosInstance.get('/transaction/getBudget');
             set({ budgets: res.data });
         } catch (error) {
-            toast.error(error.response.data.message);
+            
             console.error("Error fetching budgets:", error);
         }
     },
@@ -79,7 +79,7 @@ export const useTransactionStore = create((set) => ({
             const res = await axiosInstance.get('/transaction/getAllBudget');
             set({ allBudgets: res.data });
         } catch (error) {
-            toast.error(error.response.data.message);
+            
             console.error("Error fetching all budgets:", error);
         }
     }

@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTransactionStore } from '../store/useTransactionStore';
-
+import {Loader } from "lucide-react";
+import toast from "react-hot-toast";
 function TransactionAdd() {
+  // Form state
   const [formData, setFormData] = useState({
     type: 'expense',
     category: '',
@@ -10,17 +12,21 @@ function TransactionAdd() {
     note: '',
   });
 
+  // Filter state
   const [filterDates, setFilterDates] = useState({
     startDate: '',
     endDate: ''
   });
+  const [activeTab, setActiveTab] = useState('all'); // 'all', 'income', 'expense'
+  const [isFilterApplied, setIsFilterApplied] = useState(false);
 
+  // Store hooks
   const { addTransaction, transactions, fetchTransactions, deleteTransaction } = useTransactionStore();
+  
+  // UI state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'income', 'expense'
 
   // Enhanced category options with icons
   const categoryOptions = {
@@ -31,7 +37,6 @@ function TransactionAdd() {
       { value: 'Investments', label: '📈 Investments' },
       { value: 'Gifts', label: '🎁 Gifts' },
       { value: 'Other Income', label: '➕ Other Income' },
-      
     ],
     expense: [
       { value: 'Housing', label: '🏠 Housing' },
@@ -46,6 +51,66 @@ function TransactionAdd() {
     ]
   };
 
+  // Memoized filtered transactions
+  const filteredTransactions = useMemo(() => {
+    if (!isFilterApplied) return transactions;
+    
+    const startDate = new Date(filterDates.startDate);
+    const endDate = new Date(filterDates.endDate);
+    endDate.setHours(23, 59, 59, 999);
+
+    return transactions.filter(transaction => {
+      const transactionDate = new Date(transaction.date);
+      return transactionDate >= startDate && transactionDate <= endDate;
+    });
+  }, [transactions, filterDates, isFilterApplied]);
+
+  // Memoized display transactions with all filters applied
+  const displayTransactions = useMemo(() => {
+    let transactionsToDisplay = isFilterApplied ? filteredTransactions : transactions;
+
+    // Apply tab filter
+    if (activeTab !== 'all') {
+      transactionsToDisplay = transactionsToDisplay.filter(
+        t => t.type === activeTab
+      );
+    }
+
+    // Sort by date (newest first) and limit to 50
+    return [...transactionsToDisplay]
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 50);
+  }, [filteredTransactions, transactions, activeTab, isFilterApplied]);
+
+  // Calculate totals based on display transactions
+  const totals = useMemo(() => {
+    return displayTransactions.reduce((acc, transaction) => {
+      const amount = parseFloat(transaction.amount);
+      if (transaction.type === 'income') {
+        acc.income += amount;
+        acc.total += amount;
+      } else {
+        acc.expense += amount;
+        acc.total -= amount;
+      }
+      return acc;
+    }, { income: 0, expense: 0, total: 0 });
+  }, [displayTransactions]);
+
+  // Load transactions on mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        await fetchTransactions();
+      } catch (error) {
+        console.error("Error loading transactions:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, [fetchTransactions]);
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -59,19 +124,6 @@ function TransactionAdd() {
       [e.target.name]: e.target.value
     });
   };
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        await fetchTransactions();
-      } catch (error) {
-        console.error("Error loading transactions:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, [fetchTransactions]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -95,6 +147,7 @@ function TransactionAdd() {
         });
         setSubmitSuccess(false);
       }, 2000);
+      
     } catch (error) {
       console.error("Error adding transaction:", error);
     } finally {
@@ -102,80 +155,39 @@ function TransactionAdd() {
     }
   };
 
-  const filterTransactions = useCallback(() => {
+  const applyFilter = useCallback(() => {
     if (!filterDates.startDate || !filterDates.endDate) {
-      setFilteredTransactions([]);
+      setIsFilterApplied(false);
       return;
     }
+    setIsFilterApplied(true);
+  }, [filterDates]);
 
-    const startDate = new Date(filterDates.startDate);
-    const endDate = new Date(filterDates.endDate);
-    endDate.setHours(23, 59, 59, 999);
-
-    const filtered = transactions.filter(transaction => {
-      const transactionDate = new Date(transaction.date);
-      return transactionDate >= startDate && transactionDate <= endDate;
-    });
-
-    setFilteredTransactions(filtered);
-  }, [filterDates, transactions]);
+  const clearFilter = useCallback(() => {
+    setFilterDates({ startDate: '', endDate: '' });
+    setIsFilterApplied(false);
+  }, []);
 
   const handleDelete = useCallback(async (id) => {
-    if (window.confirm("Are you sure you want to delete this transaction?")) {
+    
       try {
         setIsLoading(true);
         await deleteTransaction(id);
+       
       } catch (error) {
         console.error("Error deleting transaction:", error);
       } finally {
         setIsLoading(false);
       }
-    }
   }, [deleteTransaction]);
-
-  // Enhanced transaction filtering
-  const getDisplayTransactions = useCallback(() => {
-    let transactionsToDisplay = filteredTransactions.length > 0 
-      ? filteredTransactions 
-      : transactions;
-
-    // Apply tab filter
-    if (activeTab !== 'all') {
-      transactionsToDisplay = transactionsToDisplay.filter(
-        t => t.type === activeTab
-      );
-    }
-    return [...transactionsToDisplay].sort((a, b) => 
-      new Date(b.date) - new Date(a.date)
-    ).slice(0, 50); // Limit to 50 most recent
-  }, [filteredTransactions, transactions, activeTab]);
-
-  const displayTransaction= getDisplayTransactions();
-
-  const displayTransactions = filteredTransactions.length > 0 
-    ? displayTransaction 
-    : displayTransaction.slice(0, 5);
-
-  const calculateTotals = () => {
-    return displayTransactions.reduce((acc, transaction) => {
-      const amount = parseFloat(transaction.amount);
-      if (transaction.type === 'income') {
-        acc.income += amount;
-        acc.total += amount;
-      } else {
-        acc.expense += amount;
-        acc.total -= amount;
-      }
-      return acc;
-    }, { income: 0, expense: 0, total: 0 });
-  };
-
-  const totals = calculateTotals();
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="flex flex-col items-center">
+          <Loader className="animate-spin h-10 w-10 text-blue-600" />
+          <p className="mt-4 text-gray-600">Loading your Transactions...</p>
+        </div>
       </div>
     );
   }
@@ -399,7 +411,7 @@ function TransactionAdd() {
                     className="border border-gray-300 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                   />
                   <button
-                    onClick={filterTransactions}
+                    onClick={applyFilter}
                     disabled={!filterDates.startDate || !filterDates.endDate}
                     className={`bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded-lg font-medium transition-all shadow hover:shadow-md ${!filterDates.startDate || !filterDates.endDate ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
@@ -408,12 +420,9 @@ function TransactionAdd() {
                 </div>
                 
                 {/* Clear Filter */}
-                {filteredTransactions.length > 0 && (
+                {isFilterApplied && (
                   <button
-                    onClick={() => {
-                      setFilteredTransactions([]);
-                      setFilterDates({ startDate: '', endDate: '' });
-                    }}
+                    onClick={clearFilter}
                     className="text-sm text-blue-500 hover:text-blue-700 whitespace-nowrap"
                   >
                     Clear Filter
@@ -454,7 +463,7 @@ function TransactionAdd() {
                 </svg>
                 <h3 className="mt-2 text-lg font-medium text-gray-900">No transactions found</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  {filteredTransactions.length > 0 ? 'Try adjusting your filters.' : 'Get started by adding a new transaction.'}
+                  {isFilterApplied ? 'No transactions match your filters.' : 'Get started by adding a new transaction.'}
                 </p>
               </div>
             ) : (

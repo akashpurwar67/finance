@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTransactionStore } from "../store/useTransactionStore";
-import { useEffect, useMemo } from "react";
 import { Bar } from "react-chartjs-2";
+import { Loader } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -26,25 +27,63 @@ const MonthlySummary = () => {
   const [expandedMonth, setExpandedMonth] = useState(null);
   const [selectedView, setSelectedView] = useState('summary');
   const [isLoading, setIsLoading] = useState(true);
-
+  const [timeRange, setTimeRange] = useState('current-month');
+  const navigate = useNavigate();
 
   useEffect(() => {
-      const loadData = async () => {
-        setIsLoading(true);
-        try {
-          await Promise.all([fetchTransactions(), getAllBudget()]);
-        } catch (error) {
-          console.error("Error loading data:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      loadData();
-    }, [fetchTransactions, getAllBudget]);
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.all([fetchTransactions(), getAllBudget()]);
+      } catch (error) {
+        console.error("Error loading data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, [fetchTransactions, getAllBudget]);
 
+  const getDateRange = () => {
+    const now = new Date();
+    const startDate = new Date();
+    const endDate = new Date();
+    
+    switch(timeRange) {
+      case 'last-3-months':
+        startDate.setMonth(now.getMonth() - 2);
+        startDate.setDate(1);
+        break;
+      case 'last-6-months':
+        startDate.setMonth(now.getMonth() - 5);
+        startDate.setDate(1);
+        break;
+      case 'custom-range':
+        // You can implement custom date picker here
+        break;
+      case 'current-month':
+      default:
+        startDate.setDate(1);
+        break;
+    }
+    
+    return { startDate, endDate };
+  };
 
-  const { monthlyData, sortedMonths, totals, categoryBreakdown } = useMemo(() => {
-    const transactionData = transactions.reduce((acc, t) => {
+  const { monthlyData, sortedMonths, totals, categoryBreakdown, hasData } = useMemo(() => {
+    const { startDate, endDate } = getDateRange();
+    
+    const filteredTransactions = transactions.filter(t => {
+      const date = new Date(t.date);
+      return date >= startDate && date <= endDate;
+    });
+
+    const filteredBudgets = allBudgets.filter(b => {
+      const date = new Date(b.createdAt);
+      return date >= startDate && date <= endDate;
+    });
+
+    const transactionData = filteredTransactions.reduce((acc, t) => {
       const date = new Date(t.date);
       const monthYear = `${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
       
@@ -71,7 +110,7 @@ const MonthlySummary = () => {
       return acc;
     }, {});
 
-    const budgetData = allBudgets.reduce((acc, budget) => {
+    const budgetData = filteredBudgets.reduce((acc, budget) => {
       const date = new Date(budget.createdAt);
       const monthYear = `${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
       
@@ -139,9 +178,10 @@ const MonthlySummary = () => {
       monthlyData: mergedData,
       sortedMonths: sorted,
       totals,
-      categoryBreakdown
+      categoryBreakdown,
+      hasData: sorted.length > 0
     };
-  }, [transactions, allBudgets]);
+  }, [transactions, allBudgets, timeRange]);
 
   const chartData = {
     labels: sortedMonths.map(([month]) => month),
@@ -208,10 +248,65 @@ const MonthlySummary = () => {
   const formatCurrency = (amount) => {
     return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
   };
+
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="flex flex-col items-center">
+          <Loader className="animate-spin h-10 w-10 text-blue-600" />
+          <p className="mt-4 text-gray-600">Loading your Reports...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasData) {
+    return (
+      <div className="bg-white p-6 rounded-xl shadow-md text-center">
+        <div className="max-w-md mx-auto py-12">
+          <svg
+            className="mx-auto h-16 w-16 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <h3 className="mt-4 text-lg font-medium text-gray-900">
+            No financial data available
+          </h3>
+          <p className="mt-2 text-sm text-gray-500">
+            Get started by adding transactions or budgets to see your monthly summary.
+          </p>
+          <div className="mt-6">
+            <button
+              type="button"
+              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              onClick={() => navigate('/add')}
+            >
+              <svg
+                className="-ml-1 mr-2 h-5 w-5"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Add Transaction
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -219,26 +314,40 @@ const MonthlySummary = () => {
   return (
     <div className="bg-white p-6 rounded-xl shadow-md">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <h3 className="text-xl font-bold text-gray-800">Monthly Financial Summary</h3>
+        <h3 className="text-xl font-bold text-gray-800">Financial Summary</h3>
         
-        <div className="flex flex-wrap gap-4">
-          <div className="bg-green-50 p-3 rounded-lg min-w-[120px]">
-            <p className="text-sm text-green-600">Total Income</p>
-            <p className="text-lg font-semibold text-green-700">
-              {formatCurrency(totals.income)}
-            </p>
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+          <div className="flex gap-2">
+            <select 
+              value={timeRange}
+              onChange={(e) => setTimeRange(e.target.value)}
+              className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="current-month">Current Month</option>
+              <option value="last-3-months">Last 3 Months</option>
+              <option value="last-6-months">Last 6 Months</option>
+            </select>
           </div>
-          <div className="bg-red-50 p-3 rounded-lg min-w-[120px]">
-            <p className="text-sm text-red-600">Total Expenses</p>
-            <p className="text-lg font-semibold text-red-700">
-              {formatCurrency(totals.expense)}
-            </p>
-          </div>
-          <div className="bg-blue-50 p-3 rounded-lg min-w-[120px]">
-            <p className="text-sm text-blue-600">Total Budget</p>
-            <p className="text-lg font-semibold text-blue-700">
-              {formatCurrency(totals.budget)}
-            </p>
+          
+          <div className="flex flex-wrap gap-2">
+            <div className="bg-green-50 p-3 rounded-lg min-w-[120px]">
+              <p className="text-sm text-green-600">Total Income</p>
+              <p className="text-lg font-semibold text-green-700">
+                {formatCurrency(totals.income)}
+              </p>
+            </div>
+            <div className="bg-red-50 p-3 rounded-lg min-w-[120px]">
+              <p className="text-sm text-red-600">Total Expenses</p>
+              <p className="text-lg font-semibold text-red-700">
+                {formatCurrency(totals.expense)}
+              </p>
+            </div>
+            <div className="bg-blue-50 p-3 rounded-lg min-w-[120px]">
+              <p className="text-sm text-blue-600">Total Budget</p>
+              <p className="text-lg font-semibold text-blue-700">
+                {formatCurrency(totals.budget)}
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -248,7 +357,23 @@ const MonthlySummary = () => {
       </div>
 
       <div className="space-y-4">
-        <h4 className="font-semibold text-gray-700">Monthly Breakdown</h4>
+        <div className="flex justify-between items-center">
+          <h4 className="font-semibold text-gray-700">Monthly Breakdown</h4>
+          <div className="flex gap-2">
+            <button
+              className={`px-3 py-1 rounded-md text-sm ${selectedView === 'summary' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}
+              onClick={() => setSelectedView('summary')}
+            >
+              Summary
+            </button>
+            <button
+              className={`px-3 py-1 rounded-md text-sm ${selectedView === 'category' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}
+              onClick={() => setSelectedView('category')}
+            >
+              Categories
+            </button>
+          </div>
+        </div>
         
         {sortedMonths.map(([monthYear, data]) => {
           const budgetDiff = data.budget - data.expense;
@@ -281,32 +406,6 @@ const MonthlySummary = () => {
               
               {expandedMonth === monthYear && (
                 <div className="border-t p-4 bg-gray-50">
-                  <div className="flex justify-between mb-4">
-                    <div className="flex gap-2">
-                      <button
-                        className={`px-3 py-1 rounded-md text-sm ${selectedView === 'summary' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}
-                        onClick={() => setSelectedView('summary')}
-                      >
-                        Summary
-                      </button>
-                      <button
-                        className={`px-3 py-1 rounded-md text-sm ${selectedView === 'category' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}
-                        onClick={() => setSelectedView('category')}
-                      >
-                        Categories
-                      </button>
-                    </div>
-                    
-                    <div className="text-right">
-                      <p className="text-sm text-gray-500">Net</p>
-                      <p className={`text-sm font-medium ${
-                        data.income - data.expense >= 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {formatCurrency(data.income - data.expense)}
-                      </p>
-                    </div>
-                  </div>
-                  
                   {selectedView === 'summary' ? (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="bg-white p-3 rounded-lg shadow-sm">

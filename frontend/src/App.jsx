@@ -4,10 +4,14 @@ import { useAuthStore } from "./store/useAuthStore";
 import TransactionAdd from './pages/transactionadd';
 import BudgetPage from './pages/budget';
 import Home from './pages/home';
+import { Toaster } from "react-hot-toast";
 import Login from './pages/login';
 import SignUp from './pages/signup';
 import NavBar from './component/navbar';
 import MonthlySummary from './pages/report';
+import TripListPage from './pages/trip';
+import TripDetailPage from './pages/tripdetails';
+import Find from './pages/find';
 
 function App() {
   const { authUser, checkAuth } = useAuthStore();
@@ -44,6 +48,7 @@ function App() {
               path="/signup" 
               element={!authUser ? <SignUp /> : <Navigate to="/" replace />} 
             />
+            
             <Route 
               path="/add" 
               element={authUser ? <TransactionAdd /> : <Navigate to="/login" replace />} 
@@ -56,7 +61,21 @@ function App() {
               path="/report" 
               element={authUser ? <MonthlySummary /> : <Navigate to="/login" replace />} 
             />
+            <Route 
+              path="/trip" 
+              element={authUser ? <TripListPage /> : <Navigate to="/login" replace />} 
+            />
+            <Route 
+              path="/trips/:id" 
+              element={authUser ? <TripDetailPage /> : <Navigate to="/login" replace />} 
+            />
+            <Route 
+              path="/find" 
+              element={authUser ? <Find /> : <Navigate to="/login" replace />} 
+            />
           </Routes>
+          <Toaster/>
+
         </div>
       </Router>
     </div>
