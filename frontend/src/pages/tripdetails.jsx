@@ -6,7 +6,7 @@ import { Plus, MoreVertical, Trash2, Loader } from "lucide-react";
 const TripDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { trip, fetchTripById, isLoading, addExpenseToTrip } = useTripStore();
+  const { trip, fetchTripById, isLoading, addExpenseToTrip, deleteTran } = useTripStore();
   const [newExpense, setNewExpense] = useState({
     description: '',
     amount: '',
@@ -16,6 +16,15 @@ const TripDetailPage = () => {
   const [participantBalances, setParticipantBalances] = useState({});
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [perPersonCost, setPerPersonCost] = useState(0);
+  const handleDeleteExpense = async (expenseId) => {
+    try {
+      await deleteTran(expenseId);
+      await fetchTripById(id);
+      setSettlements([])
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+    }
+  };
 
   useEffect(() => {
     fetchTripById(id);
@@ -42,7 +51,7 @@ const TripDetailPage = () => {
     trip.expenses.forEach(expense => {
       // The payer gets credited with the full amount
       balances[expense.paidBy] += expense.amount;
-      
+
       // Each participant owes their share
       const share = expense.amount / trip.participants.length;
       trip.participants.forEach(participant => {
@@ -64,7 +73,7 @@ const TripDetailPage = () => {
       toast.error('Please fill all fields');
       return;
     }
-    
+
     try {
       await addExpenseToTrip({
         ...newExpense,
@@ -72,6 +81,7 @@ const TripDetailPage = () => {
         id
       });
       await fetchTripById(id);
+      setSettlements([])
       setNewExpense({ description: '', amount: '', paidBy: '' });
       toast.success('Expense added successfully');
     } catch (error) {
@@ -90,7 +100,7 @@ const TripDetailPage = () => {
     // Create copies of creditor and debtor arrays from participantBalances
     const creditors = [];
     const debtors = [];
-    
+
     Object.entries(participantBalances).forEach(([person, balance]) => {
       if (balance > 0) {
         creditors.push({ person, amount: balance });
@@ -111,9 +121,9 @@ const TripDetailPage = () => {
     while (creditorIndex < creditors.length && debtorIndex < debtors.length) {
       const creditor = creditors[creditorIndex];
       const debtor = debtors[debtorIndex];
-      
+
       const settlementAmount = parseFloat(Math.min(creditor.amount, debtor.amount).toFixed(2));
-      
+
       newSettlements.push({
         from: debtor.person,
         to: creditor.person,
@@ -144,7 +154,7 @@ const TripDetailPage = () => {
 
   return (
     <div className="max-w-2xl mx-auto p-4">
-      <button 
+      <button
         onClick={() => navigate('/trip')}
         className="mb-4 text-blue-500 hover:underline flex items-center"
       >
@@ -192,14 +202,13 @@ const TripDetailPage = () => {
           {trip.participants.map((participant) => (
             <div key={participant} className="flex justify-between items-center">
               <span className="font-medium">{participant}</span>
-              <span className={`font-medium ${
-                participantBalances[participant] > 0 
-                  ? 'text-green-600' 
-                  : participantBalances[participant] < 0 
-                    ? 'text-red-600' 
-                    : 'text-gray-600'
-              }`}>
-                {participantBalances[participant] > 0 
+              <span className={`font-medium ${participantBalances[participant] > 0
+                ? 'text-green-600'
+                : participantBalances[participant] < 0
+                  ? 'text-red-600'
+                  : 'text-gray-600'
+                }`}>
+                {participantBalances[participant] > 0
                   ? `Gets back ₹${participantBalances[participant].toFixed(2)}`
                   : participantBalances[participant] < 0
                     ? `Owes ₹${Math.abs(participantBalances[participant]).toFixed(2)}`
@@ -223,12 +232,12 @@ const TripDetailPage = () => {
               id="description"
               placeholder="Dinner, Taxi, etc."
               value={newExpense.description}
-              onChange={(e) => setNewExpense({...newExpense, description: e.target.value})}
+              onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
               className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
             />
           </div>
-          
+
           <div>
             <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
               Amount (₹)
@@ -238,14 +247,14 @@ const TripDetailPage = () => {
               id="amount"
               placeholder="0.00"
               value={newExpense.amount}
-              onChange={(e) => setNewExpense({...newExpense, amount: e.target.value})}
+              onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
               className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               min="0"
               step="0.01"
               required
             />
           </div>
-          
+
           <div>
             <label htmlFor="paidBy" className="block text-sm font-medium text-gray-700 mb-1">
               Paid by
@@ -253,7 +262,7 @@ const TripDetailPage = () => {
             <select
               id="paidBy"
               value={newExpense.paidBy}
-              onChange={(e) => setNewExpense({...newExpense, paidBy: e.target.value})}
+              onChange={(e) => setNewExpense({ ...newExpense, paidBy: e.target.value })}
               className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
             >
@@ -263,7 +272,7 @@ const TripDetailPage = () => {
               ))}
             </select>
           </div>
-          
+
           <button
             type="submit"
             className="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors"
@@ -281,23 +290,47 @@ const TripDetailPage = () => {
             {trip.expenses.length} {trip.expenses.length === 1 ? 'expense' : 'expenses'}
           </span>
         </div>
-        
+
         {trip.expenses.length === 0 ? (
           <p className="text-center py-4 text-gray-500">No expenses added yet</p>
         ) : (
           <div className="space-y-3">
             {trip.expenses.map((expense, index) => (
-              <div key={index} className="border-b pb-3 last:border-b-0">
-                <div className="flex justify-between">
-                  <div>
-                    <p className="font-medium">{expense.description}</p>
-                    <p className="text-sm text-gray-500">
-                      Paid by {expense.paidBy} • {new Date(expense.createdAt).toLocaleDateString()}
+              <div key={index} className="border-b border-gray-200 py-4 last:border-b-0 group relative">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-800 truncate">{expense.description}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Paid by <span className="font-medium text-gray-700">{expense.paidBy}</span> • {new Date(expense.createdAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <p className="font-bold">₹{expense.amount.toFixed(2)}</p>
+                  <div className="flex items-center gap-4">
+                    <p className="font-bold text-gray-900 whitespace-nowrap">₹{expense.amount.toFixed(2)}</p>
+                    <button
+                      onClick={() => handleDeleteExpense(expense._id)}
+                      className="text-red-500 hover:text-red-700 transition-colors p-1 rounded-full hover:bg-red-50"
+                      aria-label="Delete expense"
+                      title="Delete expense"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
+
             ))}
           </div>
         )}
@@ -318,8 +351,8 @@ const TripDetailPage = () => {
 
         {settlements.length === 0 ? (
           <p className="text-center py-4 text-gray-500">
-            {trip.expenses.length > 0 
-              ? "Click 'Calculate Split' to see who owes whom" 
+            {trip.expenses.length > 0
+              ? "Click 'Calculate Split' to see who owes whom"
               : "Add expenses to calculate settlements"}
           </p>
         ) : (

@@ -72,6 +72,7 @@ export const addExpenseToTrip = async (req, res) => {
 }
 
 export const deleteTrip = async (req, res) => {
+    
     const { id } = req.params;
     const userId = req.user._id;
     try {
@@ -134,4 +135,29 @@ export const uploadStatement = async (req, res) => {
         res.status(500).json({ message: 'Could not parse PDF' });
     }
 };
+
+export const deleteTran = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const trip = await Trip.findOneAndUpdate(
+            { 'expenses._id': id },
+            { $pull: { expenses: { _id: id } } },
+            { new: true, select: 'expenses' }
+        );
+
+        if (!trip) {
+            console.log("No trip found with that expense ID.");
+            return res.status(404).json({ message: 'Expense not found' });
+            
+        }
+
+        res.status(200).json({ message: 'Expense deleted successfully', trip });
+    } catch (error) {
+        console.error('Error deleting expense:', error.message);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+
 

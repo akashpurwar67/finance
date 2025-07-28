@@ -30,25 +30,23 @@ const NavBar = () => {
         { to: '/budget', label: 'Budget', icon: <PieChart size={18} /> },
         { to: '/report', label: 'Reports', icon: <BarChart2 size={18} /> },
         { to: '/trip', label: 'Trips', icon: <BarChart2 size={18} /> },
-        { to: '/find', label: 'Transactions', icon: <X size={18} /> },
     ];
 
     return (
         <>
             {/* Desktop Navigation */}
-            <motion.nav 
+            <motion.nav
                 initial={{ y: -100 }}
                 animate={{ y: 0 }}
                 transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
-                    scrolled ? 'bg-white shadow-lg' : 'bg-white/95 backdrop-blur-md'
-                } border-b border-gray-100`}
+                className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white shadow-lg' : 'bg-white/95 backdrop-blur-md'
+                    } border-b border-gray-100`}
             >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16 items-center">
                         {/* Logo */}
                         <Link to="/" className="flex-shrink-0 flex items-center group">
-                            <motion.div 
+                            <motion.div
                                 whileHover={{ rotate: -15 }}
                                 className="h-9 w-9 text-indigo-600 flex items-center justify-center"
                             >
@@ -57,7 +55,7 @@ const NavBar = () => {
                                         d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                             </motion.div>
-                            <motion.span 
+                            <motion.span
                                 className="ml-2 text-xl font-bold text-gray-800 group-hover:text-indigo-600 transition-colors"
                                 whileHover={{ x: 2 }}
                             >
@@ -66,20 +64,18 @@ const NavBar = () => {
                         </Link>
 
                         {/* Desktop Menu */}
-                        <div className="hidden md:flex md:items-center md:space-x-1">
+                        <div className="hidden md:flex md:items-center md:space-x-4">
                             {navLinks.map((link) => (
-                                <Link 
+                                <Link
                                     key={link.to}
                                     to={link.to}
                                     className="relative group px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
                                 >
                                     <div className="flex items-center text-gray-600 group-hover:text-indigo-600">
-                                        <span className="mr-2 opacity-70 group-hover:opacity-100">
-                                            {link.icon}
-                                        </span>
+
                                         {link.label}
                                     </div>
-                                    <motion.span 
+                                    <motion.span
                                         className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-indigo-600"
                                         initial={{ width: 0, x: '-50%' }}
                                         whileHover={{ width: '80%' }}
@@ -93,10 +89,11 @@ const NavBar = () => {
                         <div className="flex items-center space-x-4">
                             {authUser ? (
                                 <div className="flex items-center space-x-4">
-                                    <motion.div 
+                                    <motion.div
                                         className="relative"
                                         onHoverStart={() => setIsHoveringUser(true)}
                                         onHoverEnd={() => setIsHoveringUser(false)}
+                                        onClick={() => setIsHoveringUser(!isHoveringUser)}
                                     >
                                         <div className="flex items-center space-x-2 cursor-pointer">
                                             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center text-indigo-600 shadow-inner">
@@ -106,7 +103,7 @@ const NavBar = () => {
                                                 {authUser?.fullName?.split(' ')[0] || 'User'}
                                             </span>
                                         </div>
-                                        
+
                                         <AnimatePresence>
                                             {isHoveringUser && (
                                                 <motion.div
@@ -117,6 +114,17 @@ const NavBar = () => {
                                                 >
                                                     <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
                                                         {authUser.email}
+                                                    </div>
+                                                    <div
+                                                        className="px-4 py-3 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 cursor-pointer transition-colors duration-200 border-b border-gray-100 last:border-b-0"
+                                                        onClick={() => navigate('/find')}
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                            </svg>
+                                                            Statement Analyzer
+                                                        </div>
                                                     </div>
                                                     <button
                                                         onClick={handleLogout}
@@ -172,7 +180,7 @@ const NavBar = () => {
                         transition={{ duration: 0.2, ease: 'easeInOut' }}
                         className="md:hidden fixed inset-0 z-40 pt-16"
                     >
-                        <div 
+                        <div
                             className="absolute inset-0 bg-black/20 backdrop-blur-sm"
                             onClick={() => setIsMobileMenuOpen(false)}
                         />
@@ -189,7 +197,7 @@ const NavBar = () => {
                                         {link.label}
                                     </Link>
                                 ))}
-                                
+
                                 {authUser && (
                                     <>
                                         <div className="border-t border-gray-200 my-1"></div>

@@ -47,12 +47,12 @@ export const useTripStore = create((set => ({
         }
     },
     addExpenseToTrip: async (data) => {
-        
+
         set({ isLoading: true });
         try {
             const res = await axiosInstance.post(`/trips/addexpense/${data.id}`, data);
-            
-            
+
+
         }
         catch (error) {
             toast.error("Failed to create trip");
@@ -76,6 +76,32 @@ export const useTripStore = create((set => ({
             set({ isLoading: false });
         }
 
+    },
+    deleteTran: async (id) => {
+        set({ isLoading: true });
+        try {
+            const res = await axiosInstance.delete(`/trips/deletetran/${id}`);
+            const updatedTrip = res.data.trip;
+
+            set((state) => ({
+                trips: state.trips.map((trip) =>
+                    trip._id === updatedTrip._id ? updatedTrip : trip
+                )
+                
+            }));
+
+            
+          
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to delete expense");
+            throw error;
+        } finally {
+            set({ isLoading: false });
+        }
     }
+
+
+
 
 })))

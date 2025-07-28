@@ -24,34 +24,43 @@ export const useTransactionStore = create((set) => ({
     },
 
     addTransaction: async (data) => {
+        set({ isLoading: true });
         try {
             const res = await axiosInstance.post('/transaction/add', data);
             set((state) => ({ transactions: [...state.transactions, res.data] }));
-            toast.success("Transaction added successfully");
+           
         } catch (error) {
             toast.error(error.response.data.message);
+        } finally {
+            set({ isLoading: false });
         }
     },
 
     deleteTransaction: async (id) => {
+        set({ isLoading: true });
         try {
             await axiosInstance.delete(`/transaction/delete/${id}`);
             set((state) => ({
                 transactions: state.transactions.filter((t) => t._id !== id)
             }));
-            toast.success("Transaction deleted successfully");
+          
         } catch (error) {
             toast.error(error.response.data.message);
+        } finally {
+            set({ isLoading: false });
         }
     },
 
     addBudget: async (data) => {
+        set({ isLoading: true });
         try{
             await axiosInstance.post('/transaction/addBudget',data);
-            toast.success("Budget added successfully");
+           
         }
         catch (error){
             toast.error(error.response.data.message);
+        } finally {
+            set({ isLoading: false });
         }
     },
     getBudget: async () => {
@@ -64,14 +73,17 @@ export const useTransactionStore = create((set) => ({
         }
     },
     deleteBudget: async (id) => {
+        set({ isLoading: true });
         try {
             await axiosInstance.delete(`/transaction/deleteBudget/${id}`);
             set((state) => ({
                 budgets: state.budgets.filter((b) => b._id !== id)
             }));
-            toast.success("Budget deleted successfully");
+            
         } catch (error) {
             toast.error(error.response.data.message);
+        } finally {
+            set({ isLoading: false });
         }
     },
     getAllBudget: async () => {
