@@ -3,6 +3,9 @@ import {axiosInstance} from "../lib/axios.js";
 import toast from "react-hot-toast";
 export const useAuthStore = create((set) => ({
     authUser: null,
+    error: null,
+    success: null,
+    isLoading: false,
     isSigningUp: false,
     isLoggingIn: false,
     isCheckingAuth: true,
@@ -55,5 +58,19 @@ export const useAuthStore = create((set) => ({
             toast.error(error.response.data.message);
         }
     },
+    changePassword: async (data) => {
+        set({isLoading: true})
+        try {
+            const res = await axiosInstance.post('/auth/change-password', data);
+            set({error: res.data.message});
+            set({success: res.data.success});
+            
+            
+        } catch (error) {
+            set({isLoading: false})
+            set({error: "unable to change"});
+            throw error;
+        }
+    }
 
 }));

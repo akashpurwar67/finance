@@ -16,26 +16,6 @@ const userSchema = new mongoose.Schema(
       required: true,
       minlength: 6,
     },
-    budget: [
-      {
-        category: {
-          type: String,
-          required: true,
-        },
-        amount: {
-          type: Number,
-          required: true,
-          default: 0,
-        },
-        period: {
-          type: String,
-          enum: ['monthly', 'yearly'],
-          required: true,
-        },
-      }
-    ],
-
-
   },
   { timestamps: true }
 );

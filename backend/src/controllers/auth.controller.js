@@ -58,7 +58,7 @@ export const login =async (req, res) => {
         if(!user){
             return res.status(400).json({message: 'Invalid credentials'});
         }
-        console.log(user);
+        
         const isMatch = await bcrypt.compare(password,user.password);
         if(!isMatch){
             return res.status(400).json({message: 'Invalid credentials'});
@@ -89,3 +89,32 @@ export const checkAuth =  (req,res) => {
         res.status(500).json({message: 'Server Error'});
     }
 };
+
+export const changePassword = async (req, res) => {
+    const {oldPassword, newPassword} = req.body;
+    try {
+        if(!oldPassword || !newPassword) {
+            return res.status(400).json({message: 'Please fill in all fields'});
+        }
+        if(newPassword.length < 6) {
+            return res.status(400).json({message: 'New password must be at least 6 characters long'});
+        }
+        const user = await User.findById(req.user._id);
+        if(!user) {
+            return res.status(404).json({message: 'User not found'});
+        }
+        
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
+        
+        if(!isMatch) {
+            return res.status(400).json({message: 'Current password is incorrect'});
+        }
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+        await user.save();
+        res.status(200).json({success: 'Password changed successfully'});
+    } catch (error) {
+        console.log('Error in changePassword: ',error.message);
+        res.status(500).json({message: 'Server Error'});
+    }
+}

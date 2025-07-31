@@ -10,6 +10,7 @@ import SignUp from './pages/signup';
 import NavBar from './component/navbar';
 import MonthlySummary from './pages/report';
 import TripListPage from './pages/trip';
+import ChangePasswordPage from './pages/changePass';
 import TripDetailPage from './pages/tripdetails';
 import Find from './pages/find';
 
@@ -72,6 +73,10 @@ function App() {
             <Route 
               path="/find" 
               element={authUser ? <Find /> : <Navigate to="/login" replace />} 
+            />
+            <Route 
+              path="/change" 
+              element={authUser ? <ChangePasswordPage /> : <Navigate to="/login" replace />} 
             />
           </Routes>
           <Toaster/>

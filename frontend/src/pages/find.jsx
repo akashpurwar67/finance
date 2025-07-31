@@ -1,281 +1,6 @@
 import React, { useState } from 'react';
 import { axiosInstance } from '../lib/axios';
 import { format } from 'date-fns';
-import styled, { keyframes } from 'styled-components';
-
-// Animations
-const fadeIn = keyframes`
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-`;
-
-const pulse = keyframes`
-  0% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(52, 152, 219, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0); }
-`;
-
-// Styled Components
-const Container = styled.div`
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 2rem;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-`;
-
-const Header = styled.h2`
-  color: #2c3e50;
-  margin-bottom: 1.5rem;
-  font-weight: 600;
-  text-align: center;
-  position: relative;
-  
-  &::after {
-    content: '';
-    display: block;
-    width: 80px;
-    height: 4px;
-    background: linear-gradient(to right, #3498db, #9b59b6);
-    margin: 0.5rem auto 0;
-    border-radius: 2px;
-  }
-`;
-
-const UploadCard = styled.div`
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-  margin-bottom: 2rem;
-  animation: ${fadeIn} 0.5s ease-out;
-`;
-
-const InputGroup = styled.div`
-  margin-bottom: 1.5rem;
-`;
-
-const Label = styled.label`
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #34495e;
-  font-size: 0.95rem;
-`;
-
-const FileInput = styled.input`
-  width: 100%;
-  padding: 0.8rem;
-  border: 2px dashed #bdc3c7;
-  border-radius: 8px;
-  background: #f8f9fa;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  
-  &:hover {
-    border-color: #3498db;
-    background: #f0f7ff;
-  }
-  
-  &::file-selector-button {
-    padding: 0.5rem 1rem;
-    background: #ecf0f1;
-    border: none;
-    border-radius: 4px;
-    margin-right: 1rem;
-    cursor: pointer;
-    transition: background 0.2s;
-    
-    &:hover {
-      background: #dfe6e9;
-    }
-  }
-`;
-
-const DateInput = styled.input`
-  width: 100%;
-  padding: 0.8rem;
-  border: 1px solid #dfe6e9;
-  border-radius: 8px;
-  font-family: inherit;
-  transition: border 0.3s;
-  
-  &:focus {
-    outline: none;
-    border-color: #3498db;
-    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
-  }
-`;
-
-const DateRangeContainer = styled.div`
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  
-  @media (max-width: 600px) {
-    flex-direction: column;
-  }
-`;
-
-const ErrorMessage = styled.div`
-  color: #e74c3c;
-  margin-bottom: 1rem;
-  padding: 0.8rem;
-  background: rgba(231, 76, 60, 0.1);
-  border-radius: 8px;
-  border-left: 4px solid #e74c3c;
-  animation: ${fadeIn} 0.3s ease-out;
-`;
-
-const SubmitButton = styled.button`
-  background: linear-gradient(to right, #3498db, #2980b9);
-  color: white;
-  border: none;
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  width: 100%;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 6px rgba(52, 152, 219, 0.1);
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(52, 152, 219, 0.15);
-  }
-  
-  &:active {
-    transform: translateY(0);
-  }
-  
-  &:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-    background: #bdc3c7;
-  }
-  
-  ${({ isLoading }) => isLoading && `
-    position: relative;
-    overflow: hidden;
-    
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.3),
-        transparent
-      );
-      animation: shimmer 1.5s infinite;
-    }
-  `}
-`;
-
-const SummaryCard = styled.div`
-  background: linear-gradient(135deg, #2c3e50, #4a6491);
-  color: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  margin-bottom: 2rem;
-  display: flex;
-  justify-content: space-between;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  animation: ${fadeIn} 0.5s ease-out;
-  
-  @media (max-width: 600px) {
-    flex-direction: column;
-    gap: 1rem;
-  }
-`;
-
-const SummaryItem = styled.div`
-  text-align: center;
-  flex: 1;
-  
-  strong {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-    font-size: 0.9rem;
-    opacity: 0.8;
-  }
-  
-  span {
-    font-size: 1.3rem;
-    font-weight: 600;
-  }
-  
-  &:not(:last-child) {
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-    
-    @media (max-width: 600px) {
-      border-right: none;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      padding-bottom: 1rem;
-    }
-  }
-`;
-
-const TransactionTable = styled.div`
-  border: 1px solid #e0e6ed;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
-  animation: ${fadeIn} 0.5s ease-out;
-`;
-
-const TableHeader = styled.div`
-  display: grid;
-  grid-template-columns: 1.5fr 3fr 1fr 1fr;
-  background: #f8f9fa;
-  font-weight: 600;
-  color: #7f8c8d;
-  padding: 1rem;
-  border-bottom: 1px solid #e0e6ed;
-  
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr 2fr 1fr;
-    div:nth-child(3) {
-      display: none;
-    }
-  }
-`;
-
-const TableRow = styled.div`
-  display: grid;
-  grid-template-columns: 1.5fr 3fr 1fr 1fr;
-  padding: 1rem;
-  border-bottom: 1px solid #f1f3f5;
-  background: ${({ index }) => (index % 2 === 0 ? '#fff' : '#f8fafc')};
-  transition: background 0.2s;
-  
-  &:hover {
-    background: #f1f8ff;
-  }
-  
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr 2fr 1fr;
-    div:nth-child(3) {
-      display: none;
-    }
-  }
-`;
-
-const AmountCell = styled.div`
-  text-align: right;
-  font-weight: 500;
-`;
-
-const TypeCell = styled.div`
-  text-align: center;
-  font-weight: 600;
-  color: ${({ type }) => (type === 'CREDIT' ? '#27ae60' : '#e74c3c')};
-`;
 
 function Find() {
   const [file, setFile] = useState(null);
@@ -287,7 +12,7 @@ function Find() {
   const [error, setError] = useState('');
 
   const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
+    const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
       setFileName(selectedFile.name);
@@ -338,91 +63,149 @@ function Find() {
   }, { credit: 0, debit: 0 });
 
   return (
-    <Container>
-      <Header>Bank/UPI Statement Analyzer</Header>
+    <div className="max-w-4xl mx-auto p-4 md:p-8 font-sans">
+      {/* Header */}
+      <h2 className="text-2xl md:text-3xl font-semibold text-gray-800 mb-4 md:mb-6 text-center relative">
+        Bank/UPI Statement Analyzer
+        <span className="block w-16 md:w-20 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mx-auto mt-2"></span>
+      </h2>
       
-      <UploadCard>
-        <InputGroup>
-          <Label>Statement PDF</Label>
-          <FileInput 
-            type="file" 
-            accept=".pdf"
-            onChange={handleFileChange}
-          />
-          {fileName && (
-            <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#7f8c8d' }}>
-              Selected: {fileName}
-            </div>
-          )}
-        </InputGroup>
+      {/* Upload Card */}
+      <div className="bg-white p-4 md:p-8 rounded-xl shadow-lg mb-6 md:mb-8">
+        <div className="mb-4 md:mb-6">
+          <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm">Statement PDF</label>
+          <div className="relative">
+            <input 
+              type="file" 
+              accept=".pdf"
+              onChange={handleFileChange}
+              className="w-full p-2 md:p-3 text-sm md:text-base border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 cursor-pointer file:mr-2 md:file:mr-4 file:py-1 md:file:py-2 file:px-2 md:file:px-4 file:rounded file:border-0 file:bg-gray-100 file:hover:bg-gray-200 file:text-xs md:file:text-sm"
+            />
+            {fileName && (
+              <div className="mt-1 md:mt-2 text-xs md:text-sm text-gray-500 truncate">
+                Selected: {fileName}
+              </div>
+            )}
+          </div>
+        </div>
 
-        <DateRangeContainer>
-          <div style={{ flex: 1 }}>
-            <Label>From Date</Label>
-            <DateInput 
+        {/* Date Range */}
+        <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-4 md:mb-6">
+          <div className="flex-1">
+            <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm">From Date</label>
+            <input 
               type="date" 
               value={fromDate}
-              onChange={e => setFromDate(e.target.value)} 
+              onChange={e => setFromDate(e.target.value)}
+              className="w-full p-2 md:p-3 text-sm md:text-base border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-          <div style={{ flex: 1 }}>
-            <Label>To Date</Label>
-            <DateInput 
+          <div className="flex-1">
+            <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm">To Date</label>
+            <input 
               type="date" 
               value={toDate}
-              onChange={e => setToDate(e.target.value)} 
+              onChange={e => setToDate(e.target.value)}
+              className="w-full p-2 md:p-3 text-sm md:text-base border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-        </DateRangeContainer>
+        </div>
 
-        {error && <ErrorMessage>{error}</ErrorMessage>}
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 md:mb-6 text-sm md:text-base text-red-600 p-2 md:p-3 bg-red-50 rounded-lg border-l-4 border-red-500">
+            {error}
+          </div>
+        )}
 
-        <SubmitButton 
+        {/* Submit Button */}
+        <button
           onClick={handleUpload}
           disabled={isLoading}
-          isLoading={isLoading}
+          className={`w-full py-2 md:py-3 px-4 md:px-6 rounded-lg text-sm md:text-base text-white font-medium bg-gradient-to-r from-blue-500 to-blue-600 shadow-md hover:shadow-lg transition-all duration-300 ${
+            isLoading ? 'opacity-70 cursor-not-allowed' : ''
+          }`}
         >
-          {isLoading ? 'Analyzing Statement...' : 'Analyze Statement'}
-        </SubmitButton>
-      </UploadCard>
+          {isLoading ? (
+            <span className="flex items-center justify-center">
+              <svg className="animate-spin -ml-1 mr-2 md:mr-3 h-4 w-4 md:h-5 md:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Analyzing Statement...
+            </span>
+          ) : (
+            'Analyze Statement'
+          )}
+        </button>
+      </div>
 
+      {/* Results Section */}
       {transactions.length > 0 && (
         <>
-          <SummaryCard>
-            <SummaryItem>
-              <strong>Total Credit</strong>
-              <span>₹{totals.credit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-            </SummaryItem>
-            <SummaryItem>
-              <strong>Total Debit</strong>
-              <span>₹{totals.debit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-            </SummaryItem>
-            <SummaryItem>
-              <strong>Net Balance</strong>
-              <span>₹{(totals.credit - totals.debit).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-            </SummaryItem>
-          </SummaryCard>
+          {/* Summary Cards */}
+          <div className="bg-gradient-to-br from-gray-800 to-gray-700 text-white p-4 md:p-6 rounded-xl shadow-lg mb-6 md:mb-8 flex flex-col sm:flex-row justify-between gap-3 md:gap-4">
+            <div className="text-center flex-1 p-2 md:p-0">
+              <strong className="block text-gray-300 text-xs md:text-sm font-medium mb-1">Total Credit</strong>
+              <span className="text-xl md:text-2xl font-bold">
+                ₹{totals.credit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div className="text-center flex-1 border-t sm:border-t-0 sm:border-l border-gray-600 pt-3 sm:pt-0 sm:pl-3 md:sm:pl-4 p-2 md:p-0">
+              <strong className="block text-gray-300 text-xs md:text-sm font-medium mb-1">Total Debit</strong>
+              <span className="text-xl md:text-2xl font-bold">
+                ₹{totals.debit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div className="text-center flex-1 border-t sm:border-t-0 sm:border-l border-gray-600 pt-3 sm:pt-0 sm:pl-3 md:sm:pl-4 p-2 md:p-0">
+              <strong className="block text-gray-300 text-xs md:text-sm font-medium mb-1">Net Balance</strong>
+              <span className="text-xl md:text-2xl font-bold">
+                ₹{(totals.credit - totals.debit).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+          </div>
 
-          <h3 style={{ color: '#2c3e50', marginBottom: '1rem' }}>Transaction Details</h3>
-          <TransactionTable>
-            <TableHeader>
-              <div>Date</div>
-              <div>Description</div>
-              <div>Amount</div>
-              <div>Type</div>
-            </TableHeader>
+          {/* Transactions Table */}
+          <h3 className="text-lg md:text-xl font-semibold text-gray-800 mb-3 md:mb-4">Transaction Details</h3>
+          <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+            {/* Table Header */}
+            <div className="grid grid-cols-12 bg-gray-50 font-semibold text-gray-600 p-3 md:p-4 border-b border-gray-200 text-xs md:text-sm">
+              <div className="col-span-4 sm:col-span-3 md:col-span-2">Date</div>
+              <div className="col-span-5 sm:col-span-6 md:col-span-7">Description</div>
+              <div className="col-span-3 sm:col-span-2 md:col-span-2 text-right">Amount</div>
+              <div className="hidden sm:block md:col-span-1 text-center">Type</div>
+            </div>
+            
+            {/* Table Rows */}
             {transactions.map((transaction, index) => (
-              <TableRow key={index} index={index}>
-                <div>{format(new Date(transaction.date), 'dd MMM yyyy')}</div>
-                <div>{transaction.description}</div>
-                <AmountCell>₹{transaction.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</AmountCell>
-                <TypeCell type={transaction.type}>{transaction.type}</TypeCell>
-              </TableRow>
+              <div 
+                key={index} 
+                className={`grid grid-cols-12 p-3 md:p-4 border-b border-gray-100 text-xs md:text-sm ${
+                  index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                } hover:bg-blue-50 transition-colors`}
+              >
+                <div className="col-span-4 sm:col-span-3 md:col-span-2">
+                  {format(new Date(transaction.date), 'dd MMM yy')}
+                </div>
+                <div className="col-span-5 sm:col-span-6 md:col-span-7 truncate">
+                  {transaction.description}
+                </div>
+                <div className="col-span-3 sm:col-span-2 md:col-span-2 text-right font-medium">
+                  ₹{transaction.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </div>
+                <div className="hidden sm:block md:col-span-1 text-center font-semibold">
+                  <span className={`text-xs md:text-sm ${
+                    transaction.type === 'CREDIT' ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {transaction.type.charAt(0)}
+                  </span>
+                </div>
+              </div>
             ))}
-          </TransactionTable>
+          </div>
         </>
       )}
-    </Container>
+    </div>
   );
 }
 
