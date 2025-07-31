@@ -117,7 +117,7 @@ export const uploadStatement = async (req, res) => {
             if (date >= fromDate && date <= toDate) {
                 transactions.push({
                     date: fullDateStr,
-                    description: `Paid to ${recipient.trim()}`,
+                    description: type.toLowerCase() === 'debit' ? `Paid to ${recipient.trim()}` : `Received from ${recipient.trim()}`,
                     type: type.toUpperCase(),
                     amount: parseFloat(amt.replace(/,/g, '')),
                 });
@@ -128,7 +128,7 @@ export const uploadStatement = async (req, res) => {
 
 
         fs.unlinkSync(filePath); // delete after use
-        console.log('Transactions extracted:', transactions);
+        
         res.status(200).json({ transactions });
     } catch (err) {
         console.error('PDF Parse Error:', err.message);
