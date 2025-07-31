@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTransactionStore } from '../store/useTransactionStore';
 import {Loader } from "lucide-react";
-import toast from "react-hot-toast";
 function TransactionAdd() {
   // Form state
   const [formData, setFormData] = useState({
@@ -279,7 +278,7 @@ function TransactionAdd() {
                   name="date"
                   value={formData.date}
                   onChange={handleChange}
-                  max={new Date().toISOString().split('T')[0]}
+                  max={new Date().toLocaleDateString('en-CA')}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                   required
                 />
@@ -398,7 +397,7 @@ function TransactionAdd() {
                     name="startDate"
                     value={filterDates.startDate}
                     onChange={handleFilterChange}
-                    max={new Date().toISOString().split('T')[0]}
+                    max={new Date().toLocaleDateString('en-CA')}
                     className="border border-gray-300 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                   />
                   <span className="flex items-center">to</span>
@@ -407,7 +406,7 @@ function TransactionAdd() {
                     name="endDate"
                     value={filterDates.endDate}
                     onChange={handleFilterChange}
-                    max={new Date().toISOString().split('T')[0]}
+                    max={new Date().toLocaleDateString('en-CA')}
                     className="border border-gray-300 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                   />
                   <button

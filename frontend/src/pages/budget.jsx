@@ -55,16 +55,28 @@ const BudgetPage = () => {
   // Calculate filtered transactions
   const filteredTransactions = useMemo(() => {
     const now = new Date();
-    const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+    // Convert to IST using toLocaleString
+    const localNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+
+    const startDate = new Date(localNow.getFullYear(), localNow.getMonth(), 1);
+    const endDate = new Date(localNow.getFullYear(), localNow.getMonth() + 1, 1);
 
     return transactions.filter(transaction => {
-      const transactionDate = new Date(transaction.date);
-      return transactionDate >= startDate &&
-        transactionDate <= endDate &&
-        transaction.type === 'expense';
+      const transactionDate = new Date(
+        new Date(transaction.date).toLocaleString("en-US", {
+          timeZone: "Asia/Kolkata",
+        })
+      );
+
+      return (
+        transactionDate >= startDate &&
+        transactionDate < endDate && // use < to avoid including 1st of next month
+        transaction.type === "expense"
+      );
     });
   }, [transactions]);
+
 
   // Calculate category spending
   useEffect(() => {
@@ -157,9 +169,9 @@ const BudgetPage = () => {
           </p>
         </div>
         <div className="flex space-x-2">
-          <button 
+          <button
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center shadow-md hover:shadow-lg"
-            onClick={() => {navigate('/add')}}
+            onClick={() => { navigate('/add') }}
           >
             <Plus className="h-5 w-5 mr-2" />
             Add Transaction
@@ -174,11 +186,10 @@ const BudgetPage = () => {
             <button
               key={range}
               onClick={() => setTimeRange(range)}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                timeRange === range
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${timeRange === range
                   ? "bg-white text-blue-600 shadow-sm"
                   : "text-gray-600 hover:text-gray-800"
-              }`}
+                }`}
             >
               {range.charAt(0).toUpperCase() + range.slice(1)}
             </button>
@@ -202,7 +213,7 @@ const BudgetPage = () => {
           </div>
           <p className="text-gray-500 text-sm mt-2">for {timeRange} expenses</p>
         </div>
-        
+
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
@@ -219,20 +230,18 @@ const BudgetPage = () => {
             {totalBudgeted > 0 ? ((totalSpent / totalBudgeted) * 100).toFixed(1) : 0}% of budget
           </p>
         </div>
-        
+
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-gray-500 text-sm font-medium mb-1">Remaining</h3>
-              <p className={`text-2xl font-bold ${
-                remainingBudget >= 0 ? "text-green-600" : "text-red-600"
-              }`}>
+              <p className={`text-2xl font-bold ${remainingBudget >= 0 ? "text-green-600" : "text-red-600"
+                }`}>
                 {formatCurrency(Math.abs(remainingBudget))} {remainingBudget >= 0 ? "left" : "over"}
               </p>
             </div>
-            <div className={`p-3 rounded-full ${
-              remainingBudget >= 0 ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
-            }`}>
+            <div className={`p-3 rounded-full ${remainingBudget >= 0 ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
+              }`}>
               {remainingBudget >= 0 ? (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
@@ -255,11 +264,10 @@ const BudgetPage = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`whitespace-nowrap py-4 px-1 font-medium text-sm border-b-2 ${
-                activeTab === tab
+              className={`whitespace-nowrap py-4 px-1 font-medium text-sm border-b-2 ${activeTab === tab
                   ? "border-blue-500 text-blue-600"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
+                }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
@@ -407,10 +415,9 @@ const BudgetPage = () => {
                               <div className="flex items-center gap-2">
                                 <div className="w-full bg-gray-200 rounded-full h-2.5">
                                   <div
-                                    className={`h-2.5 rounded-full ${
-                                      progress > 100 ? "bg-red-500" : 
-                                      progress > 80 ? "bg-yellow-500" : "bg-green-500"
-                                    }`}
+                                    className={`h-2.5 rounded-full ${progress > 100 ? "bg-red-500" :
+                                        progress > 80 ? "bg-yellow-500" : "bg-green-500"
+                                      }`}
                                     style={{ width: `${Math.min(progress, 100)}%` }}
                                   />
                                 </div>

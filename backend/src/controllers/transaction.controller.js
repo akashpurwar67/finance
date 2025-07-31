@@ -1,8 +1,16 @@
 // controllers/transactionController.js
 import Transaction from "../models/transaction.model.js"
-import User from "../models/user.model.js";
 import Budget from "../models/budget.model.js";
+function getCurrentISTDate(date) {
+  // Create date in local time (this will be the server's timezone)
+  
 
+  // Convert to IST (UTC+5:30)
+  const ISTOffset = 330; // IST is UTC+5:30 (5*60 + 30 = 330 minutes)
+  const ISTTime = new Date(date.getTime() + ISTOffset * 60 * 1000);
+
+  return ISTTime;
+}
 export const addTransaction = async (req, res) => {
   const { type, category, amount, date, note } = req.body;
   const userId = req.user.id;
@@ -17,15 +25,13 @@ export const addTransaction = async (req, res) => {
   if (isNaN(amount) || amount <= 0) {
     return res.status(400).send({ message: "Amount must be a positive number" });
   }
-  if (new Date(date) > new Date()) {
-    return res.status(400).send({ message: "Date cannot be in the future" });
-  }
+  
   const transaction = new Transaction({
     userId,
     type,
     category,
     amount,
-    date: new Date(date),
+    date: getCurrentISTDate(new Date(date)), // Convert to IST
     note
   });
   // Save transaction
@@ -35,18 +41,10 @@ export const addTransaction = async (req, res) => {
 
 export const getTransactions = async (req, res) => {
   try {
-    const now = new Date();
-
-    // Start of the current month (e.g., May 1st 00:00:00)
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    // Start of next month (exclusive upper bound)
-    const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
     const transactions = await Transaction.find({
       userId: req.user._id,
     }).sort({ date: -1 }); // Optional: sort by most recent first
-
     res.status(200).json(transactions);
   } catch (error) {
     console.error("Error fetching current month transactions:", error);
@@ -71,18 +69,24 @@ export const addBudget = async (req, res) => {
 
     const userId = req.user._id;
     const now = new Date();
+
+    console.log(now,getCurrentISTDate(now))
+   
     const month = now.getMonth();
     const year = now.getFullYear();
+    const startDate = new Date(year, month, 1); // Start of the month
+    const endDate = new Date(year, month + 1, 1); // Start of next month
 
     // Find if a budget for this category and this month/year exists
     let existingBudget = await Budget.findOne({
       userId,
       category,
       createdAt: {
-        $gte: new Date(year, month, 1),
-        $lt: new Date(year, month + 1, 1)
-      }
+        $gte: getCurrentISTDate(startDate),          // IST month start
+        $lt: getCurrentISTDate(endDate),       // before next month
+      },
     });
+
 
     let budget;
     if (existingBudget) {
@@ -99,7 +103,7 @@ export const addBudget = async (req, res) => {
       });
       await budget.save();
     }
-    
+
     res.status(201).send(budget);
   } catch (err) {
     console.error("Error adding budget:", err);
@@ -110,22 +114,30 @@ export const addBudget = async (req, res) => {
 export const getBudgets = async (req, res) => {
   try {
     const userId = req.user._id;
+
+    // Get current IST date parts
     const now = new Date();
+    
+
     const month = now.getMonth();
     const year = now.getFullYear();
-    const budgets = await Budget.find({ userId,
+    const startDate = new Date(year, month, 1); // Start of the month
+    const endDate = new Date(year, month + 1, 1); // Start of next month
+    const budgets = await Budget.find({
+      userId,
       createdAt: {
-        $gte: new Date(year, month, 1),
-        $lt: new Date(year, month + 1, 1)
-      }
-     });
+        $gte: getCurrentISTDate(startDate),
+        $lt: getCurrentISTDate(endDate),
+      },
+    });
 
     res.status(200).send(budgets);
   } catch (err) {
-    console.error("Error fetching budgets:", err);
-    res.status(500).send({ message: "Internal server error" });
+    console.error('Error fetching budgets:', err);
+    res.status(500).send({ message: 'Internal server error' });
   }
 };
+
 
 export const deleteBudget = async (req, res) => {
   try {
