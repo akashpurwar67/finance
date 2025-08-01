@@ -48,36 +48,45 @@ const MonthlySummary = () => {
     const now = new Date();
     const startDate = new Date(now);
     const endDate = new Date(now);
-    console.log(now)
+    
     
 
     endDate.setMonth(now.getMonth() + 1);
     endDate.setDate(0);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0,0,0,0);
+    
 
     switch (timeRange) {
       case 'current-month':
         startDate.setMonth(now.getMonth());
         startDate.setDate(1);
+      
         break;
       case 'last-3-months':
         startDate.setMonth(now.getMonth() - 2);
         startDate.setDate(1);
+      
         break;
       case 'last-6-months':
         startDate.setMonth(now.getMonth() - 5);
         startDate.setDate(1);
+     
         break;
       case 'last-9-months':
         startDate.setMonth(now.getMonth() - 8);
         startDate.setDate(1);
+        
         break;
       case 'last-12-months':
         startDate.setMonth(now.getMonth() - 11);
         startDate.setDate(1);
+        
         break;
       
       default:
         startDate.setDate(1);
+        
         break;
     }
 
@@ -100,6 +109,10 @@ const MonthlySummary = () => {
     // Generate all months in the selected range to ensure we show empty months
     const allMonths = [];
     const current = new Date(startDate);
+    let x = new Date(startDate);
+    x.setDate(1);
+    x = x.toISOString().split('T')[0];
+    
     current.setDate(1); // Ensure we start from the first day of the month
 
     while (current <= endDate) {

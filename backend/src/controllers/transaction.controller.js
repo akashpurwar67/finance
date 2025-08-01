@@ -70,12 +70,13 @@ export const addBudget = async (req, res) => {
     const userId = req.user._id;
     const now = new Date();
 
-    console.log(now,getCurrentISTDate(now))
    
     const month = now.getMonth();
     const year = now.getFullYear();
     const startDate = new Date(year, month, 1); // Start of the month
+    startDate.setHours(0, 0, 0, 0); // Set to start of the day
     const endDate = new Date(year, month + 1, 1); // Start of next month
+    endDate.setHours(0, 0, 0, 0); // Set to start of the day
 
     // Find if a budget for this category and this month/year exists
     let existingBudget = await Budget.findOne({
@@ -121,8 +122,10 @@ export const getBudgets = async (req, res) => {
 
     const month = now.getMonth();
     const year = now.getFullYear();
-    const startDate = new Date(year, month, 1); // Start of the month
+    const startDate = new Date(year, month, 1);
+    startDate.setHours(0, 0, 0, 0); // Set to start of the day
     const endDate = new Date(year, month + 1, 1); // Start of next month
+    endDate.setHours(0, 0, 0, 0); // Set to start of the day
     const budgets = await Budget.find({
       userId,
       createdAt: {
